@@ -1,0 +1,26 @@
+# Binaries for programs and plugins
+*.dll
+*.so
+*.dylib
+
+# Test binary, generated with `go test -c`
+*.test
+
+# Output of the go toolchain
+*.out
+
+# IDE-specific files
+.idea/
+.vscode/
+
+# Dependency directories (example for Go modules)
+vendor/
+
+# Go build cache
+.cache/go-build/
+
+# macOS specific files
+.DS_Store
+
+# Windows specific files
+Thumbs.db
