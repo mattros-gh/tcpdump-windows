@@ -2,6 +2,8 @@
 
 This is a `tcpdump`-like tool specifically designed for Windows, written in Go. It leverages `gopacket` and `pcap` libraries to capture, filter, and analyze network packets on your system.
 
+I wanted to use tcpdump on Windows computers, but the previous software I used by MicroOlap hasn't been updated and blue screens newer versions of Windows workstations on execution. My goal with this project was to be able to use tcpdump syntax to do a packet capture on a computer in a single executable.
+
 ## Features
 
 *   **Packet Capture:** Capture live network traffic from a selected interface.
