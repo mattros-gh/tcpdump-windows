@@ -82,7 +82,7 @@ tcpdump.exe -i 1 "host 192.168.1.1"
 If you have the Go toolchain installed, you can build this project from source:
 
 ```
-git clone https://github.com/your-repo/tcpdump-windows.git
+git clone https://github.com/mattros-gh/tcpdump-windows.git
 cd tcpdump-windows
 go build -o tcpdump.exe .
 ```
