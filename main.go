@@ -304,8 +304,11 @@ func decodeHTTP(payload []byte, verbose bool) string {
 }
 
 func printBanner() {
-	fmt.Println("\n\n*******************************************************\n" +
-		"tcpdump for Windows version 1.0.1 written by Matt Roszel\n" +
-		"matt@b-compservices.com\n" +
-		"*******************************************************\n\n")
+	fmt.Println("\n+-------------------------------------------------------+")
+	fmt.Println("|                                                       |")
+	fmt.Println("|        tcpdump for Windows version 1.0.1              |")
+	fmt.Println("|              Written by Matt Roszel                   |")
+	fmt.Println("|            matt@b-compservices.com                    |")
+	fmt.Println("|                                                       |")
+	fmt.Println("+-------------------------------------------------------+\n")
 }
