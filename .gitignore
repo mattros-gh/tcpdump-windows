@@ -4,6 +4,8 @@
 *.dylib
 *.pcap
 GEMINI.md
+.gitignore
+
 # Test binary, generated with `go test -c`
 *.test
 
