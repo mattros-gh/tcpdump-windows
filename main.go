@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -22,10 +23,21 @@ var (
 	listIfaces = pflag.BoolP("list-interfaces", "D", false, "List available interfaces and exit.")
 	verbose    = pflag.BoolP("verbose", "v", false, "Print verbose output.")
 	writeFile  = pflag.StringP("write", "w", "", "Write the raw packets to the given file.")
+	help       = pflag.BoolP("help", "h", false, "Print this help message.")
 )
 
 func main() {
+	pflag.Usage = func() {
+		printBanner()
+		fmt.Fprintf(os.Stderr, "Usage of %s:\n", filepath.Base(os.Args[0]))
+		pflag.PrintDefaults()
+	}
 	pflag.Parse()
+
+	if *help {
+		pflag.Usage()
+		os.Exit(0)
+	}
 
 	printBanner()
 
@@ -293,7 +305,7 @@ func decodeHTTP(payload []byte, verbose bool) string {
 
 func printBanner() {
 	fmt.Println("\n\n*******************************************************\n" +
-	"tcpdump for Windows written by Matt Roszel\n" +
-	"matt@b-compservices.com\n" +
-	"*******************************************************\n\n")
+		"tcpdump for Windows version 1.0.1 written by Matt Roszel\n" +
+		"matt@b-compservices.com\n" +
+		"*******************************************************\n\n")
 }
