@@ -3,8 +3,10 @@ package main
 import (
 	"bufio"
 	"crypto/sha256"
+	"encoding/binary"
 	"fmt"
 	"log"
+	"net"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -190,11 +192,39 @@ func formatPacket(packet gopacket.Packet, verbose bool) string {
 			}
 		} else if udpLayer := packet.Layer(layers.LayerTypeUDP); udpLayer != nil {
 			udp := udpLayer.(*layers.UDP)
-			output.WriteString(fmt.Sprintf("UDP, length %d", udp.Length-8))
+			output.WriteString(fmt.Sprintf("UDP, length %d, src %d, dst %d", udp.Length-8, udp.SrcPort, udp.DstPort))
+			if dhcpLayer := packet.Layer(layers.LayerTypeDHCPv4); dhcpLayer != nil {
+				dhcp := dhcpLayer.(*layers.DHCPv4)
+				msgType := "Unknown"
+				for _, opt := range dhcp.Options {
+					if opt.Type == layers.DHCPOptMessageType {
+						msgType = layers.DHCPMsgType(opt.Data[0]).String()
+						break
+					}
+				}
+				output.WriteString(fmt.Sprintf("\n        DHCPv4, %s, msg-type %s", dhcp.Operation, msgType))
+				output.WriteString(decodeDHCPOptions(dhcp))
+			}
+			// Fuller DNS Decoding
 			if dnsLayer := packet.Layer(layers.LayerTypeDNS); dnsLayer != nil {
 				dns := dnsLayer.(*layers.DNS)
-				for _, q := range dns.Questions {
-					output.WriteString(fmt.Sprintf("\n        %d+ %s? %s.", dns.ID, q.Type, q.Name))
+				if dns.QR {
+					output.WriteString(fmt.Sprintf("\n        %d ", dns.ID))
+					if dns.ANCount > 0 {
+						output.WriteString(fmt.Sprintf("%d/%d/%d", len(dns.Answers), len(dns.Authorities), len(dns.Additionals)))
+					}
+					if len(dns.Questions) > 0 {
+						output.WriteString(fmt.Sprintf(" q: %s? %s", dns.Questions[0].Type, string(dns.Questions[0].Name)))
+					}
+					for _, ans := range dns.Answers {
+						output.WriteString(fmt.Sprintf(" %s", ans.String()))
+					}
+
+				} else {
+					output.WriteString(fmt.Sprintf("\n        %d+", dns.ID))
+					for _, q := range dns.Questions {
+						output.WriteString(fmt.Sprintf(" %s? %s.", q.Type, q.Name))
+					}
 				}
 			}
 		} else if icmp4Layer := packet.Layer(layers.LayerTypeICMPv4); icmp4Layer != nil {
@@ -228,6 +258,20 @@ func formatPacket(packet gopacket.Packet, verbose bool) string {
 		} else if udpLayer := packet.Layer(layers.LayerTypeUDP); udpLayer != nil {
 			udp := udpLayer.(*layers.UDP)
 			output.WriteString(fmt.Sprintf("UDP %d > %d length %d", udp.SrcPort, udp.DstPort, udp.Length-8))
+			if dnsLayer := packet.Layer(layers.LayerTypeDNS); dnsLayer != nil {
+				dns := dnsLayer.(*layers.DNS)
+				if len(dns.Questions) > 0 {
+					output.WriteString(fmt.Sprintf(" q: %s? %s", dns.Questions[0].Type, string(dns.Questions[0].Name)))
+				}
+				if len(dns.Answers) > 0 {
+					output.WriteString(" ans:")
+					for _, ans := range dns.Answers {
+						if ans.IP != nil {
+							output.WriteString(fmt.Sprintf(" %s", ans.IP))
+						}
+					}
+				}
+			}
 		} else if icmp4Layer := packet.Layer(layers.LayerTypeICMPv4); icmp4Layer != nil {
 			icmp4, _ := icmp4Layer.(*layers.ICMPv4)
 			output.WriteString(fmt.Sprintf("ICMPv4 %s", icmp4.TypeCode))
@@ -303,10 +347,69 @@ func decodeHTTP(payload []byte, verbose bool) string {
 	return httpHeaders.String()
 }
 
+func decodeDHCPOptions(dhcp *layers.DHCPv4) string {
+	var options strings.Builder
+	for _, opt := range dhcp.Options {
+		options.WriteString(fmt.Sprintf("\n            Opt(%s", opt.Type))
+		switch opt.Type {
+		case layers.DHCPOptSubnetMask:
+			options.WriteString(fmt.Sprintf("): %s", net.IP(opt.Data)))
+		case layers.DHCPOptRouter:
+			options.WriteString("):")
+			for i := 0; i < len(opt.Data); i += 4 {
+				options.WriteString(fmt.Sprintf(" %s", net.IP(opt.Data[i:i+4])))
+			}
+		case layers.DHCPOptDNS:
+			options.WriteString("):")
+			for i := 0; i < len(opt.Data); i += 4 {
+				options.WriteString(fmt.Sprintf(" %s", net.IP(opt.Data[i:i+4])))
+			}
+		case layers.DHCPOptDomainName:
+			options.WriteString(fmt.Sprintf("): %s", string(opt.Data)))
+		case layers.DHCPOptBroadcastAddr:
+			options.WriteString(fmt.Sprintf("): %s", net.IP(opt.Data)))
+		case layers.DHCPOptLeaseTime:
+			lease := binary.BigEndian.Uint32(opt.Data)
+			options.WriteString(fmt.Sprintf("): %s", time.Duration(lease)*time.Second))
+		case layers.DHCPOptT1:
+			renewal := binary.BigEndian.Uint32(opt.Data)
+			options.WriteString(fmt.Sprintf("): %s", time.Duration(renewal)*time.Second))
+		case layers.DHCPOptT2:
+			rebinding := binary.BigEndian.Uint32(opt.Data)
+			options.WriteString(fmt.Sprintf("): %s", time.Duration(rebinding)*time.Second))
+		case layers.DHCPOpt(50):
+			options.WriteString(fmt.Sprintf("): %s", net.IP(opt.Data)))
+		case layers.DHCPOptServerID:
+			options.WriteString(fmt.Sprintf("): %s", net.IP(opt.Data)))
+		case layers.DHCPOptClientID:
+			options.WriteString(fmt.Sprintf("): %x", opt.Data))
+		case layers.DHCPOptHostname:
+			options.WriteString(fmt.Sprintf("): %s", string(opt.Data)))
+		case layers.DHCPOptClassID:
+			options.WriteString(fmt.Sprintf("): %s", string(opt.Data)))
+		case layers.DHCPOptParamsRequest:
+			options.WriteString("):")
+			for _, p := range opt.Data {
+				s := layers.DHCPOpt(p).String()
+				if s != "Unknown" {
+					options.WriteString(fmt.Sprintf(" %s", s))
+				}
+			}
+		case 81: // Client FQDN
+			if len(opt.Data) > 3 {
+				options.WriteString(fmt.Sprintf("): %s", string(opt.Data[3:])))
+			}
+		default:
+			options.WriteString(fmt.Sprintf(") len(%d) %x", opt.Length, opt.Data))
+		}
+	}
+	return options.String()
+}
+
 func printBanner() {
 	fmt.Println("\n+-------------------------------------------------------+")
 	fmt.Println("|                                                       |")
-	fmt.Println("|        tcpdump for Windows version 1.0.1              |")
+	fmt.Println("|        tcpdump for Windows version 1.0.2              |")
 	fmt.Println("|              Written by Matt Roszel                   |")
 	fmt.Println("|            matt@b-compservices.com                    |")
 	fmt.Println("|                                                       |")
