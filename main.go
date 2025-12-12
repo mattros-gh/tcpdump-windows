@@ -25,6 +25,7 @@ var (
 	listIfaces = pflag.BoolP("list-interfaces", "D", false, "List available interfaces and exit.")
 	verbose    = pflag.BoolP("verbose", "v", false, "Print verbose output.")
 	writeFile  = pflag.StringP("write", "w", "", "Write the raw packets to the given file.")
+	readFile   = pflag.StringP("read", "r", "", "Read the packets from the given file.")
 	help       = pflag.BoolP("help", "h", false, "Print this help message.")
 )
 
@@ -44,6 +45,26 @@ func main() {
 	printBanner()
 
 	filter := strings.Join(pflag.Args(), " ")
+
+	if *readFile != "" {
+		handle, err := pcap.OpenOffline(*readFile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer handle.Close()
+
+		if filter != "" {
+			if err := handle.SetBPFFilter(filter); err != nil {
+				log.Fatal(err)
+			}
+		}
+
+		packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
+		for packet := range packetSource.Packets() {
+			fmt.Println(formatPacket(packet, *verbose))
+		}
+		return
+	}
 
 	if !isNpcapInstalled() {
 		if err := installNpcap(); err != nil {
@@ -223,7 +244,7 @@ func formatPacket(packet gopacket.Packet, verbose bool) string {
 				} else {
 					output.WriteString(fmt.Sprintf("\n        %d+", dns.ID))
 					for _, q := range dns.Questions {
-						output.WriteString(fmt.Sprintf(" %s? %s.", q.Type, q.Name))
+						output.WriteString(fmt.Sprintf(" %s? %s.", q.Type, string(q.Name)))
 					}
 				}
 			}

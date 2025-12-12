@@ -9,6 +9,7 @@ I wanted to use tcpdump on Windows computers, but the previous software I used b
 *   **Packet Capture:** Capture live network traffic from a selected interface.
 *   **Interface Listing:** Easily list all available network interfaces on your system.
 *   **BPF Filtering:** Apply Berkeley Packet Filter (BPF) syntax to filter packets of interest.
+*   **PCAP Input:** Read packets from a `.pcap` file for offline analysis.
 *   **PCAP Output:** Save raw captured packets to a `.pcap` file for later analysis with tools like Wireshark.
 *   **Verbose Output:** Display detailed packet information, including IP, TCP, UDP, ICMP, and HTTP specifics.
 *   **Protocol Decoding:** Basic decoding for HTTP, DNS (UDP), and ICMP protocols.
@@ -48,6 +49,20 @@ For more detailed packet information:
 
 ```
 tcpdump.exe -i 1 -v
+```
+
+### Read from PCAP File
+
+To read packets from a saved `.pcap` file (e.g., `capture.pcap`):
+
+```
+tcpdump.exe -r capture.pcap
+```
+
+You can also combine it with verbose output:
+
+```
+tcpdump.exe -r capture.pcap -v
 ```
 
 ### Write to PCAP File
