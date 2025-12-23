@@ -51,6 +51,20 @@ For more detailed packet information:
 tcpdump.exe -i 1 -v
 ```
 
+### Hex Dump Output
+
+To display packet data in hex and ASCII format (similar to tcpdump -X):
+
+```
+tcpdump.exe -i 1 -X
+```
+
+You can combine it with verbose output:
+
+```
+tcpdump.exe -i 1 -v -X
+```
+
 ### Read from PCAP File
 
 To read packets from a saved `.pcap` file (e.g., `capture.pcap`):

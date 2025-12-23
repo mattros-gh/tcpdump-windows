@@ -26,6 +26,7 @@ var (
 	verbose    = pflag.BoolP("verbose", "v", false, "Print verbose output.")
 	writeFile  = pflag.StringP("write", "w", "", "Write the raw packets to the given file.")
 	readFile   = pflag.StringP("read", "r", "", "Read the packets from the given file.")
+	hexDump    = pflag.BoolP("hex", "X", false, "Print packet data in hex and ASCII format.")
 	help       = pflag.BoolP("help", "h", false, "Print this help message.")
 )
 
@@ -62,6 +63,9 @@ func main() {
 		packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
 		for packet := range packetSource.Packets() {
 			fmt.Println(formatPacket(packet, *verbose))
+			if *hexDump {
+				printHexDump(packet.Data())
+			}
 		}
 		return
 	}
@@ -162,6 +166,9 @@ func main() {
 			}
 			if *writeFile == "" {
 				fmt.Println(formatPacket(packet, *verbose))
+				if *hexDump {
+					printHexDump(packet.Data())
+				}
 			}
 		}
 	}
@@ -435,4 +442,36 @@ func printBanner() {
 	fmt.Println("|            matt@b-compservices.com                    |")
 	fmt.Println("|                                                       |")
 	fmt.Println("+-------------------------------------------------------+\n")
+}
+
+func printHexDump(data []byte) {
+	for i := 0; i < len(data); i += 16 {
+		// Print offset
+		fmt.Printf("\t0x%04x:  ", i)
+
+		// Print hex values
+		for j := 0; j < 16; j++ {
+			if i+j < len(data) {
+				fmt.Printf("%02x", data[i+j])
+			} else {
+				fmt.Print("  ")
+			}
+			if j%2 == 1 {
+				fmt.Print(" ")
+			}
+		}
+
+		// Print ASCII values
+		fmt.Print(" ")
+		for j := 0; j < 16; j++ {
+			if i+j < len(data) {
+				if data[i+j] >= 32 && data[i+j] <= 126 {
+					fmt.Printf("%c", data[i+j])
+				} else {
+					fmt.Print(".")
+				}
+			}
+		}
+		fmt.Println()
+	}
 }
