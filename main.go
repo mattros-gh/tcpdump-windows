@@ -137,7 +137,7 @@ func main() {
 		}
 		defer f.Close()
 		w = pcapgo.NewWriter(f)
-		if err := w.WriteFileHeader(1600, layers.LinkTypeEthernet); err != nil {
+		if err := w.WriteFileHeader(1600, handle.LinkType()); err != nil {
 			log.Fatal(err)
 		}
 	}
@@ -437,7 +437,7 @@ func decodeDHCPOptions(dhcp *layers.DHCPv4) string {
 func printBanner() {
 	fmt.Println("\n+-------------------------------------------------------+")
 	fmt.Println("|                                                       |")
-	fmt.Println("|        tcpdump for Windows version 1.0.2              |")
+	fmt.Println("|        tcpdump for Windows version 1.0.3              |")
 	fmt.Println("|              Written by Matt Roszel                   |")
 	fmt.Println("|            matt@b-compservices.com                    |")
 	fmt.Println("|                                                       |")
