@@ -439,7 +439,7 @@ func printBanner() {
 	fmt.Println("|                                                       |")
 	fmt.Println("|        tcpdump for Windows version 1.0.3              |")
 	fmt.Println("|              Written by Matt Roszel                   |")
-	fmt.Println("|            matt@b-compservices.com                    |")
+	fmt.Println("|            matt@monolithnetworks.com                  |")
 	fmt.Println("|                                                       |")
 	fmt.Println("+-------------------------------------------------------+\n")
 }
